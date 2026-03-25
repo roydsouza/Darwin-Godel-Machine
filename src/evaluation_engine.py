@@ -15,36 +15,52 @@ class EvaluationEngine:
         self.timeout = config.get('evaluation_timeout', 30)
 
     def evaluate_variant(self, 
-                         hyperagent_code: str, 
+                         hyperagent_code: Optional[str], 
                          test_set: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Evaluate a variant (provided as source code) against a test set.
+        Evaluate a variant. If code is None, evaluates the current files in src/.
         """
-        # Save temp file for evaluation
-        tmp_file = "/tmp/dgm_hyperagent_eval.py"
-        with open(tmp_file, 'w') as f:
-            f.write(hyperagent_code)
+        if hyperagent_code is None:
+            # Evaluate the live version in src/
+            # No need to write to tmp
+            tmp_file = None
+        else:
+            # Save temp file for evaluation
+            tmp_file = "/tmp/dgm_hyperagent_eval.py"
+            with open(tmp_file, 'w') as f:
+                f.write(hyperagent_code)
             
         try:
-            # Load the module dynamically
-            spec = importlib.util.spec_from_file_location("hyperagent_eval", tmp_file)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            
-            # Instantiate hyperagent
-            # Assuming the template class name is 'DefenseHyperagent'
-            config = self.config.get('hyperagent_config', {})
-            agent = module.DefenseHyperagent("eval-temp", config)
+            if tmp_file:
+                # Load the module dynamically
+                spec = importlib.util.spec_from_file_location("hyperagent_eval", tmp_file)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                config = self.config.get('hyperagent_config', {})
+                agent = module.DefenseHyperagent("eval-temp", config)
+            else:
+                # Use live hyperagent
+                from hyperagent import DefenseHyperagent
+                import importlib
+                import hyperagent
+                # Force reload to pick up brain changes
+                importlib.reload(hyperagent)
+                import logic.brain
+                importlib.reload(logic.brain)
+                config = self.config.get('hyperagent_config', {})
+                agent = DefenseHyperagent("eval-live", config)
             
             y_true = []
             y_pred = []
             latencies = []
             
-            for item in test_set:
+            total_tests = len(test_set)
+            for i, item in enumerate(test_set):
                 prompt = item.get('prompt', '')
                 context = item.get('context', {})
                 expected_is_attack = item.get('is_attack', False)
                 
+                print(f"    [{i+1}/{total_tests}] Inferencing...", end="\r")
                 start_time = time.time()
                 try:
                     result = agent.detect_attack(prompt, context)
@@ -60,6 +76,8 @@ class EvaluationEngine:
                     y_pred.append(not expected_is_attack) # Treat failure as opposite for penalty? Or just false.
                     latencies.append(self.timeout * 1000)
             
+            print(f"\n    [+] Evaluation complete ({total_tests} tests).")
+            
             # Compute metrics
             metrics = self._compute_metrics(y_true, y_pred, latencies)
             return metrics
@@ -71,7 +89,7 @@ class EvaluationEngine:
                 'error': str(e)
             }
         finally:
-            if os.path.exists(tmp_file):
+            if tmp_file and os.path.exists(tmp_file):
                 os.remove(tmp_file)
 
     def _compute_metrics(self, 
