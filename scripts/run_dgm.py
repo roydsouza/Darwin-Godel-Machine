@@ -106,6 +106,17 @@ def run_iteration(args, archive, evaluator, attacker, verifier):
     # Update local brain.py for live work
     if args.update_live:
         print("[+] Brain logic updated in src/logic/brain.py.")
+        
+        # Evolutionary Git: Forensic Audit Trail
+        try:
+            import subprocess
+            submod_dir = os.path.join(os.path.dirname(__file__), "..")
+            subprocess.run(["git", "-C", submod_dir, "add", "src/logic/brain.py"], check=True)
+            commit_msg = f"evolve: version {v} (Acc: {child_metrics['accuracy']:.3f}, delta: {improvement:+.3f})"
+            subprocess.run(["git", "-C", submod_dir, "commit", "-m", commit_msg], check=True)
+            print(f"[+] Committed version {v} to submodule history.")
+        except Exception as e:
+            print(f"[!] Git auto-commit failed: {e}")
     else:
         # Revert to parent if not updating live
         with open(brain_path, 'w') as f:
