@@ -1,8 +1,12 @@
-# Darwin-Gödel Machine (DGM) Lab
+# Darwin-Gödel Machine (DGM): Self-Referential Evolutionary Research
 
-> **Experiment 01**: Evolutionary Agent Architecture for Self-Improving Firewalls.
+The Darwin-Gödel Machine is a research laboratory focused on the development of self-referential agentic systems capable of autonomous evolutionary code modification.
 
-This lab implements a **Darwin-Gödel Machine**, a self-referential agentic system that evolves its own detection logic in response to synthesized attacks. It is the first in a series of "Auto-Research" experiments designed to explore autonomous avenues for hardening the Tachyon Tongs substrate.
+## Project Role & Relationships
+- **Function**: Implements "Experiment 01" to explore autonomous avenues for hardening system substrates through adversarial selection.
+- **Support**: Provides refined detection logic for the **[tachyon_tongs](../tachyon_tongs/)** security suite.
+- **Execution**: Utilizes the local MLX-native inference capabilities of **[event-horizon-core](../event-horizon-core/)**.
+- **Context**: Methodology for the evolutionary loops is informed by the research conducted in **[madness](../madness/)** and **[bootstrap-paradox-labs](../bootstrap-paradox-labs/)**.
 
 ## 🧬 Overview
 The DGM operates on the **HyperAgent Principle**: an agent composed of two distinct but self-referential parts:
